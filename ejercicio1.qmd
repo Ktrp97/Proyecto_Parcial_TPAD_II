@@ -30,7 +30,12 @@ title: "Ejercicio 1"
 author: "Karen"
 ---
 
+<<<<<<< HEAD
 !echo "cambio desde main" \`\`\`
+=======
+!echo "Ejercio 1" \`\`\`
+>>>>>>> nueva_rama
+
 
 ------------------------------------------------------------------------
 
