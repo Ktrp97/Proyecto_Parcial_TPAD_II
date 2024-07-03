@@ -30,7 +30,7 @@ title: "Ejercicio 1"
 author: "Karen"
 ---
 
-!echo "Ejercio" \`\`\`
+!echo "cambio desde main" \`\`\`
 
 ------------------------------------------------------------------------
 
