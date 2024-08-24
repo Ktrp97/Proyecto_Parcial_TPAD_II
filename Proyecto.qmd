@@ -1,0 +1,119 @@
+
+
+import os
+import pandas as pd
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from flask import Flask, jsonify, request
+import requests
+import seaborn as sns
+import matplotlib.pyplot as plt
+import time  # Importar time para usar sleep
+
+# Función para realizar el scraping de datos
+def scrape_data():
+    PAGINA_PRINCIPAL = "https://www.scrapethissite.com/pages/simple/"
+    navegador = webdriver.Chrome()
+    navegador.get(PAGINA_PRINCIPAL)
+    navegador.implicitly_wait(8)
+
+    datos = []
+    try:
+        paises = WebDriverWait(navegador, 8).until(
+            EC.presence_of_all_elements_located((By.CSS_SELECTOR, '.country'))
+        )
+        for pais in paises:
+            nombre = pais.find_element(By.CSS_SELECTOR, ".country-name").text
+            capital = pais.find_element(By.CSS_SELECTOR, ".country-capital").text
+            poblacion = pais.find_element(By.CSS_SELECTOR, ".country-population").text
+            superficie = pais.find_element(By.CSS_SELECTOR, ".country-area").text
+            datos.append({
+                'nombre': nombre,
+                'capital': capital,
+                'poblacion': poblacion,
+                'superficie': superficie
+            })
+    except Exception as e:
+        raise e
+    finally:
+        navegador.quit()
+
+    df = pd.DataFrame(datos)
+    return df
+
+# Ejecutar el scraping y guardar los datos
+df = scrape_data()
+file_path = os.path.join(os.getcwd(), "paises_exportados.csv")
+df.to_csv(file_path, index=False)
+
+# Configuración de la API Flask
+app = Flask(__name__)
+
+@app.route('/datos', methods=['GET'])
+def obtener_datos():
+    df = pd.read_csv("paises_exportados.csv")
+    min_poblacion = request.args.get('min_poblacion', default=0, type=int)
+    datos_filtrados = df[df['poblacion'].str.replace(',', '').astype(int) > min_poblacion]
+    resultado = datos_filtrados.to_dict(orient='records')
+    return jsonify(resultado)
+
+# Ejecutar Flask en segundo plano
+from threading import Thread
+server = Thread(target=lambda: app.run(debug=False, use_reloader=False))
+server.start()
+
+# Esperar un momento para asegurarse de que el servidor esté en funcionamiento
+time.sleep(5)  # Esperar 5 segundos
+
+# Consumir la API y crear gráficos
+url = 'http://127.0.0.1:5000/datos'
+response = requests.get(url)
+
+if response.status_code == 200:
+    datos = response.json()
+    df = pd.DataFrame(datos)
+else:
+    print("Error al consumir la API")
+    df = pd.DataFrame()
+
+if not df.empty:
+    df['continente'] = df['nombre'].apply(lambda x: 'Europa' if x in [
+        'Alemania', 'Francia', 'Italia', 'España', 'Reino Unido',
+        'Portugal', 'Bélgica', 'Países Bajos', 'Suecia', 'Polonia',
+        'Austria', 'Suiza', 'Noruega', 'Dinamarca', 'Finlandia',
+        'Grecia', 'República Checa', 'Hungría', 'Rumanía', 'Irlanda'
+    ] else 'Otro')
+
+    # Filtrar los datos para Europa
+    df_europa = df[df['continente'] == 'Europa']
+
+    if not df_europa.empty:
+        # Gráfico Categórico: Población por Continente
+        plt.figure(figsize=(10, 6))
+        sns.barplot(x='continente', y='poblacion', data=df_europa, errorbar=None)
+        plt.title('Población por Continente')
+        plt.xlabel('Continente')
+        plt.ylabel('Población')
+        plt.xticks(rotation=45)
+        plt.show()
+
+        # Gráfico Relacional: Relación entre Superficie y Población en Europa
+        plt.figure(figsize=(10, 6))
+        sns.scatterplot(x='superficie', y='poblacion', data=df_europa)
+        plt.title('Relación entre Superficie y Población en Europa')
+        plt.xlabel('Superficie (km²)')
+        plt.ylabel('Población')
+        plt.show()
+
+        # Gráfico de Distribución: Distribución de la Población en Europa
+        plt.figure(figsize=(10, 6))
+        sns.histplot(df_europa['poblacion'].astype(float), kde=True)
+        plt.title('Distribución de la Población en Europa')
+        plt.xlabel('Población')
+        plt.ylabel('Frecuencia')
+        plt.show()
+
+## Reflexion sobre los desafios que aveces el codigo puede presentar errores revisar la syntax, 
+# en aprendizajes para consultas api para extraer datos de una forma diferente.
