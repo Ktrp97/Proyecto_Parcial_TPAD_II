@@ -91,7 +91,7 @@ if not df.empty:
 
     if not df_europa.empty:
         # Gráfico Categórico: Población por Continente
-        plt.figure(figsize=(10, 6))
+        plt.figure(figsize=(10, 8))
         sns.barplot(x='continente', y='poblacion', data=df_europa, errorbar=None)
         plt.title('Población por Continente')
         plt.xlabel('Continente')
@@ -109,7 +109,7 @@ if not df.empty:
 
         # Gráfico de Distribución: Distribución de la Población en Europa
         plt.figure(figsize=(10, 6))
-        sns.histplot(df_europa['poblacion'].astype(float), kde=True)
+        sns.histplot(df_europa['poblacion'].astype(float))
         plt.title('Distribución de la Población en Europa')
         plt.xlabel('Población')
         plt.ylabel('Frecuencia')
