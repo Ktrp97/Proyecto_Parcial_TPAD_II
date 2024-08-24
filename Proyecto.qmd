@@ -96,7 +96,7 @@ if not df.empty:
         plt.title('Población por Continente')
         plt.xlabel('Continente')
         plt.ylabel('Población')
-        plt.xticks(rotation=45)
+        plt.xticks(rotation=42)
         plt.show()
 
         # Gráfico Relacional: Relación entre Superficie y Población en Europa
